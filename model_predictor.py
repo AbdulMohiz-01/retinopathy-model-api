@@ -42,7 +42,7 @@ def predict_image(image_file):
     predictions = model.predict(img_array)
 
     # Assuming you have a classification model, you might want to decode the predictions
-    class_labels = ['0', '1', '2', '3', '4', '5']  # Replace with your actual class labels
+    class_labels = ['0', '1', '2', '3', '4']  # Replace with your actual class labels
     predicted_class_index = np.argmax(predictions[0])
     predicted_class_name = class_labels[predicted_class_index]
 
