@@ -80,11 +80,14 @@
               <hr />
               <p class="mb-0">Confidence: <span id="confidence"></span></p>
             </div>
+            <!-- Bar graph container -->
+            <canvas id="barGraph" width="400" height="170"></canvas>
           </div>
         </div>
       </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
       // Function to display selected image
       document.getElementById("image").addEventListener("change", function (e) {
@@ -112,13 +115,15 @@
             // Hide loading spinner
             document.querySelector(".loading").style.display = "none";
             // Show prediction result
-            document
-              .getElementById("prediction-result")
-              .classList.remove("d-none");
+            document.getElementById("prediction-result").classList.remove("d-none");
             document.getElementById("result").innerText =
               "Predicted Class: " + data.predicted_class;
             document.getElementById("confidence").innerText =
               data.confidence.toFixed(2);
+            
+            // Display bar graph based on probabilities
+            var labels = ["0 - No DR", "1 - Mild","2 - Moderate", "3 - Severe", "4 - Proliferative DR"]; // Labels for each class
+            displayBarGraph(labels, data.predictions);
           })
           .catch((error) => {
             // Hide loading spinner
@@ -135,6 +140,39 @@
         document.getElementById("selected-image").classList.add("d-none");
         // Hide prediction result
         document.getElementById("prediction-result").classList.add("d-none");
+      }
+
+      // Function to display bar graph
+      function displayBarGraph(labels, values) {
+        var ctx = document.getElementById('barGraph').getContext('2d');
+        
+        // Check if a chart instance already exists for the 'barGraph' canvas
+        if (window.myBarChart instanceof Chart) {
+          // If a chart instance exists, destroy it before creating a new one
+          window.myBarChart.destroy();
+        }
+
+        // Create new Chart instance
+        window.myBarChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Probability',
+              data: values,
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
       }
     </script>
   </body>
