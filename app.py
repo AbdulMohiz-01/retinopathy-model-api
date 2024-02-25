@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS  # Import CORS from flask_cors
 from model_predictor import predict_image
-import socket
+#import socket
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes by passing the Flask app instance
 
@@ -40,10 +40,11 @@ def predict():
 
 if __name__ == '__main__':
     #____with in network____
-    host = socket.gethostbyname(socket.gethostname())
-    port = 5000
-    print(f"Server is listening at 👉👉: http://{host}:{port}")
-    app.run(host=host, port=port,debug=True)
+    # host = socket.gethostbyname(socket.gethostname())
+    # port = 5000
+    # print(f"Server is listening at 👉👉: http://{host}:{port}")
+    # app.run(host=host, port=port,debug=True)
 
-    #____local____
+    # ____local____
     # app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

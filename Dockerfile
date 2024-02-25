@@ -1,27 +1,14 @@
-# Stage 1: Build Python environment with dependencies
-FROM python:3.9 AS builder
+FROM python:3.10.13
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY . /app
 
-RUN python -m venv venv && \
-    . venv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install -r requirements.txt
+# Install specific versions of dependencies
+RUN pip install tensorflow-cpu flask flask_cors pillow matplotlib opencv-python-headless
 
-# Stage 2: Create the final Docker image
-FROM python:3.9-slim
+# Expose port 5000 (adjust the port number as needed)
+EXPOSE 5000
 
-WORKDIR /app
-
-COPY --from=builder /app/venv /app/venv
-COPY . .
-
-# Specify the Python interpreter to use
-ENV PATH="/app/venv/bin:$PATH"
-
-# Your additional Docker configuration commands go here
-
-# Command to run Flask application
-CMD ["python", "app.py"]
+# Run the Flask application
+CMD ["python3", "app.py"]
