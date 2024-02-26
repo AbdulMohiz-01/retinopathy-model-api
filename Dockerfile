@@ -1,14 +1,46 @@
-FROM python:3.10.13
+# FROM python:3.10.13
 
+# WORKDIR /app
+
+# COPY . /app
+
+# # Install specific versions of dependencies
+# RUN pip install tensorflow-cpu flask flask_cors pillow matplotlib opencv-python-headless
+
+# # Expose port 5000 (adjust the port number as needed)
+# EXPOSE 5000
+
+# # Run the Flask application
+# CMD ["python3", "app.py"]
+# Stage 1: Build the application
+FROM python:3.10.13-slim as builder
+
+# Set working directory
 WORKDIR /app
 
-COPY . /app
+# Copy the entire application code
+COPY . .
 
-# Install specific versions of dependencies
-RUN pip install tensorflow-cpu flask flask_cors pillow matplotlib opencv-python-headless
+# Stage 2: Create the final runtime image
+FROM python:3.10.13-slim
 
-# Expose port 5000 (adjust the port number as needed)
+# Set working directory
+WORKDIR /app
+
+# Copy only necessary files from the builder stage
+COPY --from=builder /app .
+
+# Install only necessary dependencies
+RUN pip install --no-cache-dir tensorflow-cpu flask flask_cors pillow matplotlib opencv-python-headless
+
+# Expose port 5000
 EXPOSE 5000
 
-# Run the Flask application
+# Cleanup unnecessary files
+RUN apt-get purge -y --auto-remove \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /root/.cache \
+    && rm -rf /tmp/*
+
+# Command to run the application
 CMD ["python3", "app.py"]
