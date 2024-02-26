@@ -25,7 +25,7 @@
         display: none;
       }
       .loading {
-        display: inline-block;
+        display: none;
         margin-left: 5px;
       }
     </style>
@@ -115,14 +115,22 @@
             // Hide loading spinner
             document.querySelector(".loading").style.display = "none";
             // Show prediction result
-            document.getElementById("prediction-result").classList.remove("d-none");
+            document
+              .getElementById("prediction-result")
+              .classList.remove("d-none");
             document.getElementById("result").innerText =
               "Predicted Class: " + data.predicted_class;
             document.getElementById("confidence").innerText =
               data.confidence.toFixed(2);
-            
+
             // Display bar graph based on probabilities
-            var labels = ["0 - No DR", "1 - Mild","2 - Moderate", "3 - Severe", "4 - Proliferative DR"]; // Labels for each class
+            var labels = [
+              "0 - No DR",
+              "1 - Mild",
+              "2 - Moderate",
+              "3 - Severe",
+              "4 - Proliferative DR",
+            ]; // Labels for each class
             displayBarGraph(labels, data.predictions);
           })
           .catch((error) => {
@@ -144,8 +152,8 @@
 
       // Function to display bar graph
       function displayBarGraph(labels, values) {
-        var ctx = document.getElementById('barGraph').getContext('2d');
-        
+        var ctx = document.getElementById("barGraph").getContext("2d");
+
         // Check if a chart instance already exists for the 'barGraph' canvas
         if (window.myBarChart instanceof Chart) {
           // If a chart instance exists, destroy it before creating a new one
@@ -154,24 +162,26 @@
 
         // Create new Chart instance
         window.myBarChart = new Chart(ctx, {
-          type: 'bar',
+          type: "bar",
           data: {
             labels: labels,
-            datasets: [{
-              label: 'Probability',
-              data: values,
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
-              borderColor: 'rgba(54, 162, 235, 1)',
-              borderWidth: 1
-            }]
+            datasets: [
+              {
+                label: "Probability",
+                data: values,
+                backgroundColor: "rgba(54, 162, 235, 0.5)",
+                borderColor: "rgba(54, 162, 235, 1)",
+                borderWidth: 1,
+              },
+            ],
           },
           options: {
             scales: {
               y: {
-                beginAtZero: true
-              }
-            }
-          }
+                beginAtZero: true,
+              },
+            },
+          },
         });
       }
     </script>
