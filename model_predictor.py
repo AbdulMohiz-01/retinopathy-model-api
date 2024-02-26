@@ -7,9 +7,11 @@ import cv2
 import os
 from tensorflow.keras.preprocessing import image
 
-def predict_image(image_file):
+image_path = 'uploads/image.jpg'
 
-    # save this image file to the upload folder
+
+def preprocess_image(image_file):
+     # save this image file to the upload folder
     image_file.save('uploads/image.jpg')
 
     # get the image path
@@ -21,12 +23,17 @@ def predict_image(image_file):
 
     # save the processed image
     cv2.imwrite('uploads/image.jpg', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    return 'uploads/image.jpg'
+
+
+
+def predict_image():
 
 
 
 
 
-
+    image_path = 'uploads/image.jpg'
     # Load and preprocess the image for prediction
     # img = Image.open(BytesIO(image_file.read()))
     # img = img.resize((224, 224))
