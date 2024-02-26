@@ -1,7 +1,8 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS  # Import CORS from flask_cors
 from model_predictor import predict_image
+from model_predictor import preprocess_image
 #import socket
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes by passing the Flask app instance
@@ -19,8 +20,8 @@ def index():
 def ping():
     return jsonify({'response': 'pong'})
 
-@app.route('/RetinaAPI/v1/predict', methods=['POST'])
-def predict():
+@app.route('/RetinaAPI/v1/preprocess', methods=['POST'])
+def preprocess():
     if 'image' not in request.files:
         return jsonify({'error': 'No image uploaded'}), 400
     
@@ -28,8 +29,17 @@ def predict():
     if file.filename == '':
         return jsonify({'error': 'No selected image'}), 400
     
-    # Use the predict_image function from model_predictor.py
-    predicted_class, confidence, predictions = predict_image(file)
+    # Use the preprocess_image function from model_predictor.py
+    preprocessed_image_path = preprocess_image(file)
+    # print the results
+    print('🔴 > Preprocessed image:', preprocessed_image_path)
+
+    # Return the preprocessed image
+    return send_file(preprocessed_image_path, mimetype='image/jpg')
+
+@app.route('/RetinaAPI/v1/predict', methods=['GET'])
+def predict():
+    predicted_class, confidence, predictions = predict_image()
     # print the results
     print('🔴 > Predicted class:', predicted_class)
     print('🔴 > Confidence:', confidence)
