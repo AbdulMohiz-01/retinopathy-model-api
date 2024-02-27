@@ -27,26 +27,28 @@ def preprocess_image(image_file):
 
 
 
+# Define a global variable to hold the loaded model
+loaded_model = None
+
+def load_model_if_needed():
+    global loaded_model
+    if loaded_model is None:
+        # Load the model if it hasn't been loaded yet
+        loaded_model = tf.keras.models.load_model('./artifact/retina.h5')
+
 def predict_image():
-
-
-
-
-
+    global loaded_model
+    # Load the model if needed
+    load_model_if_needed()
+    
     image_path = 'uploads/image.jpg'
     # Load and preprocess the image for prediction
-    # img = Image.open(BytesIO(image_file.read()))
-    # img = img.resize((224, 224))
-    # Preprocess the image
     img = image.load_img(image_path, target_size=(224, 224))
     img_array = image.img_to_array(img)
     img_array = tf.expand_dims(img_array, 0)  # Add batch dimension
-    # img_array = img_array.astype('float32') / 255.0  # Normalize the image data
 
-    # load the model
-    model = tf.keras.models.load_model('./artifact/retina.h5')
-    # Make predictions
-    predictions = model.predict(img_array)
+    # Make predictions using the loaded model
+    predictions = loaded_model.predict(img_array)
 
     # Assuming you have a classification model, you might want to decode the predictions
     class_labels = ['0', '1', '2', '3', '4']  # Replace with your actual class labels
