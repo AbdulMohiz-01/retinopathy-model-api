@@ -22,15 +22,12 @@ def index():
         if 'webHitsCount' in data:
             # if yes, increment the count
             data['webHitsCount'] += 1
-        else:
-            # if no, create the property and set it to 1
-            data['webHitsCount'] = 1
     # write the updated data to the file
     with open('data.json', 'w') as json_file:
         json.dump(data, json_file)
     # return the index.html page
         
-    return render_template('index.html')
+    return render_template('index.html', webHitsCount=data['webHitsCount'])
 
 @app.route('/RetinaAPI/v1/ping', methods=['GET'])
 def ping():
