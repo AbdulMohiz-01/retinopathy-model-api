@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS  # Import CORS from flask_cors
 from model_predictor import predict_image
 from model_predictor import preprocess_image
+import json
 #import socket
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes by passing the Flask app instance
@@ -14,6 +15,21 @@ CORS(app)  # Enable CORS for all routes by passing the Flask app instance
 @app.route('/')
 def index():
     print('Request for index page received')
+    # read the data from data.json file
+    with open('data.json') as json_file:
+        data = json.load(json_file)
+        # see if there is any property called webHitsCount
+        if 'webHitsCount' in data:
+            # if yes, increment the count
+            data['webHitsCount'] += 1
+        else:
+            # if no, create the property and set it to 1
+            data['webHitsCount'] = 1
+    # write the updated data to the file
+    with open('data.json', 'w') as json_file:
+        json.dump(data, json_file)
+    # return the index.html page
+        
     return render_template('index.html')
 
 @app.route('/RetinaAPI/v1/ping', methods=['GET'])
