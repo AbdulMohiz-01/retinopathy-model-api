@@ -31,7 +31,9 @@ WORKDIR /app
 COPY --from=builder /app .
 
 # Install only necessary dependencies
-RUN pip install --no-cache-dir tensorflow-cpu flask flask_cors pillow matplotlib opencv-python-headless
+ENV PIP_DEFAULT_TIMEOUT=300
+RUN pip install --no-cache-dir tensorflow-cpu==2.15.0 flask flask_cors pillow matplotlib opencv-python-headless
+
 
 # Expose port 5000
 EXPOSE 5000
