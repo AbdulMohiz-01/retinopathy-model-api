@@ -14,10 +14,11 @@ base_model = loaded_base_model
 # model = loaded_model
 
 
-
+# model_weights.h5
 model , base_model = model_structure()
-model.load_weights("./artifact/DR_model_15_19 (94.660).h5")
-model.compile(Adamax(learning_rate= 0.001), loss= 'categorical_crossentropy', metrics= ['accuracy'])
+# model.load_weights("./artifact/DR_model_15_19 (94.660).h5")
+model.load_weights("./artifact/model_weights.h5")
+# model.compile(Adamax(learning_rate= 0.001), loss= 'categorical_crossentropy', metrics= ['accuracy'])
 
 
 
