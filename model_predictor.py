@@ -7,6 +7,14 @@ import cv2
 import os
 from tensorflow.keras.preprocessing import image
 
+from tensorflow.keras.models import load_model
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dense, Dropout, Flatten, BatchNormalization
+from tensorflow.keras.applications import EfficientNetB3
+from tensorflow.keras.optimizers import Adamax
+from tensorflow.keras import regularizers
+import matplotlib.pyplot as plt
+
 image_path = 'uploads/image.jpg'
 
 
@@ -29,12 +37,47 @@ def preprocess_image(image_file):
 
 # Define a global variable to hold the loaded model
 loaded_model = None
+loaded_base_model = None
 
 def load_model_if_needed():
     global loaded_model
+    global loaded_base_model
     if loaded_model is None:
         # Load the model if it hasn't been loaded yet
-        loaded_model = tf.keras.models.load_model('./artifact/retina.h5')
+        # call model_structure() and get base model and model from it
+        loaded_model , loaded_base_model = model_structure()
+        # artifact\model_weights.h5
+        loaded_model.load_weights("./artifact/model_weights.h5")
+        loaded_model.compile(Adamax(learning_rate= 0.001), loss= 'categorical_crossentropy', metrics= ['accuracy'])
+
+        # print("done loading model")
+        # loaded_model = tf.keras.models.load_model('./artifact/EfficientNetB0DR_96.h5')
+
+def model_structure():
+    # Create Model Structure
+    img_size = (224, 224)
+    channels = 3
+    img_shape = (img_size[0], img_size[1], channels)
+    class_count = 6
+
+    # create pre-trained model (you can built on pretrained model such as :  efficientnet, VGG , Resnet )
+    # we will use efficientnetb3 from EfficientNet family.
+    base_model = tf.keras.applications.efficientnet.EfficientNetB3(include_top= False, weights= "imagenet", input_shape= img_shape, pooling= 'max')
+
+    model = Sequential([
+        base_model,
+        BatchNormalization(axis= -1, momentum= 0.99, epsilon= 0.001),
+        Dense(2040, kernel_regularizer= regularizers.l2(l= 0.016), activity_regularizer= regularizers.l1(0.006),
+                    bias_regularizer= regularizers.l1(0.006), activation= 'relu'),
+        Dropout(rate= 0.45, seed= 123),
+        Dense(class_count, activation= 'softmax')
+    ])
+
+    model.compile(Adamax(learning_rate= 0.001), loss= 'categorical_crossentropy', metrics= ['accuracy'])
+
+    model.summary()
+    return model, base_model
+
 
 def predict_image():
     global loaded_model
@@ -51,10 +94,11 @@ def predict_image():
     predictions = loaded_model.predict(img_array)
 
     # Assuming you have a classification model, you might want to decode the predictions
-    class_labels = ['0', '1', '2', '3', '4']  # Replace with your actual class labels
+    class_labels = ['0', '1', '2', '3', '4','5']  # Replace with your actual class labels
     predicted_class_index = np.argmax(predictions[0])
     predicted_class_name = class_labels[predicted_class_index]
-
+    # run grad cam code
+    # run()
     # Return the predictions
     return predicted_class_name, float(predictions[0][predicted_class_index]), predictions[0].tolist()
 

@@ -30,6 +30,9 @@
     .dNone {
       display: none;
     }
+    .dNone1 {
+      display: none;
+    }
   </style>
 </head>
 
@@ -60,12 +63,18 @@
           </div>
         </div>
       </div>
-      <div class="row justify-content-center mt-4">
+      <div class="d-flex justify-content-center align-items-center gap-4 mt-4">
         <!-- display the preprocessed image here -->
-        <div class="col-md-6 dNone">
+        <div class="dNone">
           <div role="alert">
             <h4 class="alert-heading">Preprocessed Image</h4>
             <img id="preprocessed-image" src="#" alt="Preprocessed Image" />
+          </div>
+        </div>  
+        <div class="dNone1">
+          <div role="alert">
+            <h4 class="alert-heading">Gradecam Image</h4>
+            <img id="Gradecam-image" src="#" alt="Gradecam Image" />
           </div>
         </div>
       </div>
@@ -126,6 +135,28 @@
         // You can display an error message to the user if needed
       }
 
+      const response_xai = await fetch("/RetinaAPI/v1/xai");
+      // Check if response is OK (status code 200)
+      if (response_xai.ok) {
+        // Read the response as a blob (binary data)
+        const blob = await response_xai.blob();
+
+        // Create a URL for the blob object
+        const imageURL = URL.createObjectURL(blob);
+
+        // Display the preprocessed image
+        document.getElementById("Gradecam-image").src = imageURL;
+
+        // Show the preprocessed image container
+        document.querySelector(".dNone1").style.display = "block";
+      } else {
+        // Handle errors
+        console.error("Error:", response_xai.status);
+        // You can display an error message to the user if needed
+      }
+
+
+
       fetch("/RetinaAPI/v1/predict", {
         method: "GET",
       })
@@ -149,6 +180,7 @@
             "2 - Moderate",
             "3 - Severe",
             "4 - Proliferative DR",
+            "5 - Invalid Image",
           ]; // Labels for each class
           displayBarGraph(labels, data.predictions);
         })

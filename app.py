@@ -4,6 +4,7 @@ from flask_cors import CORS  # Import CORS from flask_cors
 from model_predictor import predict_image
 from model_predictor import preprocess_image
 import json
+from grade_cam import init
 #import socket
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes by passing the Flask app instance
@@ -60,6 +61,13 @@ def predict():
 
     # Return the predictions in JSON format
     return jsonify({'predicted_class': predicted_class, 'confidence': confidence, 'predictions': predictions})
+
+@app.route('/RetinaAPI/v1/xai', methods=['GET'])
+def predict_xai():
+    xaiimg =  init()
+    # Return the image
+    return send_file(xaiimg, mimetype='image/jpg')
+
 
 if __name__ == '__main__':
     #____with in network____
