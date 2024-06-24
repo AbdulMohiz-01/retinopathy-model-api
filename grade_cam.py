@@ -24,7 +24,7 @@ model.load_weights("./artifact/model_weights.h5")
 
 img_path = 'uploads/image.jpg'
 
-# Assuming `base_model` and `img_size` are defined elsewhere
+# Assuming base_model and img_size are defined elsewhere
 model_builder = loaded_base_model
 img_size = (224, 224)
 # last_conv_layer_name = "top_conv"

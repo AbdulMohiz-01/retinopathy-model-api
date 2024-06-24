@@ -1,134 +1,90 @@
+# model_predictor.py
+
 import tensorflow as tf
 from PIL import Image
 from io import BytesIO
 import numpy as np
-from matplotlib import pyplot as plt
 import cv2
 import os
 from tensorflow.keras.preprocessing import image
-
-from tensorflow.keras.models import load_model
-from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import Dense, Dropout, Flatten, BatchNormalization
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 from tensorflow.keras.applications import EfficientNetB3
 from tensorflow.keras.optimizers import Adamax
 from tensorflow.keras import regularizers
-import matplotlib.pyplot as plt
+import keras
 
 image_path = 'uploads/image.jpg'
 
-
-def preprocess_image(image_file):
-     # save this image file to the upload folder
-    image_file.save('uploads/image.jpg')
-
-    # get the image path
-    image_path = 'uploads/image.jpg'
-
-    resize_images('uploads/')
-
-    img = load_ben_color(image_path)
-
-    # save the processed image
-    cv2.imwrite('uploads/image.jpg', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-    return 'uploads/image.jpg'
-
-
-
-# Define a global variable to hold the loaded model
+# Define global variables to hold the loaded models
 loaded_model = None
 loaded_base_model = None
 
 def load_model_if_needed():
-    global loaded_model
-    global loaded_base_model
+    global loaded_model, loaded_base_model
     if loaded_model is None:
-        # Load the model if it hasn't been loaded yet
-        # call model_structure() and get base model and model from it
-        loaded_model , loaded_base_model = model_structure()
-        # artifact\model_weights.h5
+        loaded_model, loaded_base_model = model_structure()
         loaded_model.load_weights("./artifact/model_weights.h5")
-        loaded_model.compile(Adamax(learning_rate= 0.001), loss= 'categorical_crossentropy', metrics= ['accuracy'])
-
-        # print("done loading model")
-        # loaded_model = tf.keras.models.load_model('./artifact/EfficientNetB0DR_96.h5')
 
 def model_structure():
-    # Create Model Structure
     img_size = (224, 224)
     channels = 3
     img_shape = (img_size[0], img_size[1], channels)
     class_count = 6
 
-    # create pre-trained model (you can built on pretrained model such as :  efficientnet, VGG , Resnet )
-    # we will use efficientnetb3 from EfficientNet family.
-    base_model = tf.keras.applications.efficientnet.EfficientNetB3(include_top= False, weights= "imagenet", input_shape= img_shape, pooling= 'max')
+    base_model = EfficientNetB3(include_top=False, weights="imagenet", input_shape=img_shape, pooling='max')
 
     model = Sequential([
         base_model,
-        BatchNormalization(axis= -1, momentum= 0.99, epsilon= 0.001),
-        Dense(2040, kernel_regularizer= regularizers.l2(l= 0.016), activity_regularizer= regularizers.l1(0.006),
-                    bias_regularizer= regularizers.l1(0.006), activation= 'relu'),
-        Dropout(rate= 0.45, seed= 123),
-        Dense(class_count, activation= 'softmax')
+        BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001),
+        Dense(2040, kernel_regularizer=regularizers.l2(0.016), activity_regularizer=regularizers.l1(0.006),
+              bias_regularizer=regularizers.l1(0.006), activation='relu'),
+        Dropout(rate=0.45, seed=123),
+        Dense(class_count, activation='softmax')
     ])
 
-    model.compile(Adamax(learning_rate= 0.001), loss= 'categorical_crossentropy', metrics= ['accuracy'])
+    model.compile(Adamax(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
 
     model.summary()
     return model, base_model
 
+def preprocess_image(image_file):
+    image_file.save('uploads/image.jpg')
+    image_path = 'uploads/image.jpg'
+    resize_images('uploads/')
+    img = load_ben_color(image_path)
+    cv2.imwrite('uploads/image.jpg', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    return 'uploads/image.jpg'
 
 def predict_image():
     global loaded_model
-    # Load the model if needed
     load_model_if_needed()
     
     image_path = 'uploads/image.jpg'
-    # Load and preprocess the image for prediction
     img = image.load_img(image_path, target_size=(224, 224))
     img_array = image.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0)  # Add batch dimension
+    img_array = tf.expand_dims(img_array, 0)
 
-    # Make predictions using the loaded model
     predictions = loaded_model.predict(img_array)
-
-    # Assuming you have a classification model, you might want to decode the predictions
-    class_labels = ['0', '1', '2', '3', '4','5']  # Replace with your actual class labels
+    class_labels = ['0', '1', '2', '3', '4', '5']
     predicted_class_index = np.argmax(predictions[0])
     predicted_class_name = class_labels[predicted_class_index]
-    # run grad cam code
-    # run()
-    # Return the predictions
+
     return predicted_class_name, float(predictions[0][predicted_class_index]), predictions[0].tolist()
-
-
 
 def resize_images(output_folder_path):
     for root, dirs, files in os.walk(output_folder_path):
         for file in files:
-            # Check if the file is an image (you may want to add more image extensions)
             if file.lower().endswith(('.png', '.jpg', '.jpeg')):
                 file_path = os.path.join(root, file)
-                print(f"Processing {file_path}")
                 try:
-                    # Open the image file
                     img = Image.open(file_path)
-                    # Resize the image to 300 x 300
                     resized_img = img.resize((224, 224))
-                    # Save the resized image
                     resized_img.save(file_path)
-                    # # Remove the original photo
-                    # os.remove(file_path)
                 except Exception as e:
                     print(f"Error processing {file}: {str(e)}")
 
-
-
 def crop_image_from_gray(img, tol=7):
-    """
-    Crop out black borders
-    """
     if img.ndim == 2:
         mask = img > tol
         return img[np.ix_(mask.any(1), mask.any(0))]
@@ -144,14 +100,72 @@ def crop_image_from_gray(img, tol=7):
             img3 = img[:, :, 2][np.ix_(mask.any(1), mask.any(0))]
             img = np.stack([img1, img2, img3], axis=-1)
         return img
-    
 
 def load_ben_color(path, sigmaX=10):
-    """
-    Load image, crop out black borders, and enhance contrast
-    """
     image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = crop_image_from_gray(image)
     image = cv2.addWeighted(image, 4, cv2.GaussianBlur(image, (0, 0), sigmaX), -4, 128)
     return image
+
+def init():
+    global loaded_model, loaded_base_model
+    load_model_if_needed()  # Ensure models are loaded
+
+    if loaded_model is None or loaded_base_model is None:
+        raise Exception("Model or base model is not loaded properly.")
+
+    img_path = 'uploads/image.jpg'
+    model_builder = loaded_base_model
+    img_size = (224, 224)
+    last_conv_layer_name = "top_conv"
+
+    original_image_path = img_path
+    original_image = cv2.imread(original_image_path)
+    original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+
+    img_array = preprocess_image_for_xai(img_path, img_size)
+    img_tensor = tf.convert_to_tensor(img_array, dtype=tf.float32)
+
+    class_index = np.argmax(loaded_model.predict(img_array))
+    grads = get_gradient(img_tensor, loaded_model, class_index)
+    heatmap = generate_gradcam(img_tensor, loaded_base_model, last_conv_layer_name, class_index)
+    overlayed_image = overlay_heatmap(heatmap, original_image)
+
+    cv2.imwrite('uploads/image_xai.jpg', cv2.cvtColor(overlayed_image, cv2.COLOR_RGB2BGR))
+    return 'uploads/image_xai.jpg'
+
+def preprocess_image_for_xai(img_path, img_size):
+    img = keras.utils.load_img(img_path, target_size=img_size)
+    img = keras.utils.img_to_array(img)
+    img = np.expand_dims(img, axis=0)
+    return img
+
+def get_gradient(img_array, model, class_index):
+    with tf.GradientTape() as tape:
+        tape.watch(img_array)
+        preds = model(img_array)
+        class_output = preds[:, class_index]
+    grads = tape.gradient(class_output, img_array)
+    return grads
+
+def generate_gradcam(img_array, model, last_conv_layer_name, class_index):
+    grad_model = tf.keras.models.Model(
+        [model.input], [model.get_layer(last_conv_layer_name).output, model.output]
+    )
+    with tf.GradientTape() as tape:
+        last_conv_layer_output, preds = grad_model(img_array)
+        class_output = preds[:, class_index]
+    grads = tape.gradient(class_output, last_conv_layer_output)
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    heatmap = tf.reduce_mean(tf.multiply(pooled_grads, last_conv_layer_output), axis=-1)
+    heatmap = tf.maximum(heatmap, 0)
+    heatmap /= tf.reduce_max(heatmap)
+    return tf.reshape(heatmap, (heatmap.shape[1], heatmap.shape[2])).numpy()
+
+def overlay_heatmap(heatmap, original_image):
+    heatmap = cv2.resize(heatmap, (original_image.shape[1], original_image.shape[0]))
+    heatmap = (heatmap * 255).astype(np.uint8)
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    overlayed_img = cv2.addWeighted(heatmap, 0.5, original_image, 0.5, 0)
+    return overlayed_img
