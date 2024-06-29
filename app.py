@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS
 from model_predictor import predict_image, preprocess_image, load_model_if_needed, init
 import json
-
+import google.generativeai as genai
 app = Flask(__name__)
 CORS(app)
 
@@ -21,6 +21,54 @@ def index():
 @app.route('/RetinaAPI/v1/ping', methods=['GET'])
 def ping():
     return jsonify({'response': 'pong'})
+
+# Configure your API key
+genai.configure(api_key="AIzaSyC5rVEzNVCW6HDeQXO0R7wtqwFt6_ETB3E")
+# Choose a model that's appropriate for your use case
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+@app.route('/RetinaAPI/v1/genai', methods=['POST'])
+def generateContent():
+    try:
+        # Extract class name from the request body
+        data = request.get_json()
+        className = data.get('className')
+
+        print(className)
+
+        if not className:
+            return jsonify({"error": "className is required"}), 400
+
+        # Define the prompt for the AI model
+        prompt = f"""
+        Generate content for diabetic retinopathy stage '{className}' with the following structure:
+        {{
+          '{className}': {{
+            'description': '',
+            'details': {{
+              'short_description': '',
+              'stage': '',
+              'precautions': ''
+            }}
+          }}
+        }}
+        """
+
+        # Generate content using the AI model
+        response = model.generate_content(prompt)
+        
+        # Assuming response.text contains the generated JSON
+        generated_content = response.text
+
+        # Convert the generated content to JSON
+        content = eval(generated_content)  # Using eval for simplicity; consider safer parsing in production
+
+        print(content)
+
+        return jsonify(content), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/RetinaAPI/v1/preprocess', methods=['POST'])
 def preprocess():
