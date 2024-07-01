@@ -4,6 +4,7 @@ from flask_cors import CORS
 from model_predictor import predict_image, preprocess_image, load_model_if_needed, init
 import json
 import google.generativeai as genai
+from flask import jsonify, request
 app = Flask(__name__)
 CORS(app)
 
@@ -27,48 +28,70 @@ genai.configure(api_key="AIzaSyC5rVEzNVCW6HDeQXO0R7wtqwFt6_ETB3E")
 # Choose a model that's appropriate for your use case
 model = genai.GenerativeModel('gemini-1.5-flash')
 
+
+
 @app.route('/RetinaAPI/v1/genai', methods=['POST'])
 def generateContent():
     try:
         # Extract class name from the request body
         data = request.get_json()
         className = data.get('className')
-
-        print(className)
-
+        print("Class Name:", className)
         if not className:
             return jsonify({"error": "className is required"}), 400
 
         # Define the prompt for the AI model
         prompt = f"""
-        Generate content for diabetic retinopathy stage '{className}' with the following structure:
-        {{
-          '{className}': {{
-            'description': '',
-            'details': {{
-              'short_description': '',
-              'stage': '',
-              'precautions': ''
+            Generate content for diabetic retinopathy stage '{className}' with the following structure:
+            {{
+                '{className}': {{
+                    'description': '',
+                    'details': {{
+                        'short_description': '',
+                        'stage': '',
+                        'precautions': ''
+                    }}
+                }}
             }}
-          }}
-        }}
         """
 
-        # Generate content using the AI model
-        response = model.generate_content(prompt)
-        
-        # Assuming response.text contains the generated JSON
-        generated_content = response.text
+        # Generate content using the AI model (replace this with your actual model call)
+        response = model.generate_content(prompt)  # Placeholder for actual AI model call
+        print("Raw Response:", response)
 
-        # Convert the generated content to JSON
-        content = eval(generated_content)  # Using eval for simplicity; consider safer parsing in production
+        # Access the specific class details from the response
+        extracted_info = response.candidates[0].content.parts[0].text
+        # Remove the ```json and ``` markers
+        parsed_content = extracted_info.strip().lstrip('```json').rstrip('```')
+        print("Cleaned JSON:", parsed_content)
 
-        print(content)
+        # Parse the JSON string
+        result_dict = json.loads(parsed_content)
+        print("Parsed dict:", result_dict)
 
-        return jsonify(content), 200
+        # Extract the required information
+        class_info = result_dict.get(className, {})
+        details = class_info.get('details', {})
+
+        # Construct the response in the desired format
+        formatted_response = {
+            className: {
+                'description': class_info.get('description', ''),
+                'details': {
+                    'short_description': details.get('short_description', ''),
+                    'stage': details.get('stage', ''),
+                    'precautions': details.get('precautions', '')
+                }
+            }
+        }
+
+        print("Formatted Response:", formatted_response)
+        return jsonify(formatted_response), 200
 
     except Exception as e:
+        print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/RetinaAPI/v1/preprocess', methods=['POST'])
 def preprocess():
