@@ -1,10 +1,14 @@
 import os
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, make_response
 from flask_cors import CORS
 from model_predictor import predict_image, preprocess_image, load_model_if_needed, init
 import json
 import google.generativeai as genai
 from flask import jsonify, request
+import time
+from bs4 import BeautifulSoup
+
+
 app = Flask(__name__)
 CORS(app)
 
@@ -43,16 +47,14 @@ def generateContent():
         # Define the prompt for the AI model
         prompt = f"""
             Generate content for diabetic retinopathy stage '{className}' with the following structure:
-            {{
-                '{className}': {{
-                    'description': '',
-                    'details': {{
-                        'short_description': '',
-                        'stage': '',
-                        'precautions': ''
-                    }}
-                }}
-            }}
+            <response>
+                <description>content of description</description>
+                <details>
+                    <short_description>content of short description</short_description>
+                    <stage>content of stage</stage>
+                    <precautions>content of precautions</precautions>
+                </details>
+            </response>
         """
 
         # Generate content using the AI model (replace this with your actual model call)
@@ -61,26 +63,23 @@ def generateContent():
 
         # Access the specific class details from the response
         extracted_info = response.candidates[0].content.parts[0].text
-        # Remove the ```json and ``` markers
-        parsed_content = extracted_info.strip().lstrip('```json').rstrip('```')
-        print("Cleaned JSON:", parsed_content)
+        print("Extracted Response:", extracted_info)
 
-        # Parse the JSON string
-        result_dict = json.loads(parsed_content)
-        print("Parsed dict:", result_dict)
-
-        # Extract the required information
-        class_info = result_dict.get(className, {})
-        details = class_info.get('details', {})
+        # Parse the response using BeautifulSoup
+        soup = BeautifulSoup(extracted_info, 'html.parser')
+        description = soup.find('description').text if soup.find('description') else ''
+        short_description = soup.find('short_description').text if soup.find('short_description') else ''
+        stage = soup.find('stage').text if soup.find('stage') else ''
+        precautions = soup.find('precautions').text if soup.find('precautions') else ''
 
         # Construct the response in the desired format
         formatted_response = {
             className: {
-                'description': class_info.get('description', ''),
+                'description': className,
                 'details': {
-                    'short_description': details.get('short_description', ''),
-                    'stage': details.get('stage', ''),
-                    'precautions': details.get('precautions', '')
+                    'short_description': short_description,
+                    'stage': stage,
+                    'precautions': precautions
                 }
             }
         }
@@ -112,10 +111,15 @@ def predict():
     print('🔴 > Predictions:', predictions)
     return jsonify({'predicted_class': predicted_class, 'confidence': confidence, 'predictions': predictions})
 
+
 @app.route('/RetinaAPI/v1/xai', methods=['GET'])
 def predict_xai():
-    xaiimg = init()
-    return send_file(xaiimg, mimetype='image/jpg')
+    xaiimg = init()  # Initialize or get the image path
+    response = make_response(send_file(xaiimg, mimetype='image/jpg'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 if __name__ == '__main__':
     load_model_if_needed()  # Ensure the model is loaded once at startup

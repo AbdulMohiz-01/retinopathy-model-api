@@ -32,7 +32,7 @@ COPY --from=builder /app .
 
 # Install only necessary dependencies
 ENV PIP_DEFAULT_TIMEOUT=300
-RUN pip install --no-cache-dir tensorflow-cpu==2.15.0 flask flask_cors pillow matplotlib opencv-python-headless
+RUN pip install --no-cache-dir tensorflow-cpu==2.15.0 flask flask_cors pillow matplotlib opencv-python-headless bs4 google.generativeai
 
 
 # Expose port 5000
