@@ -46,13 +46,36 @@ def generateContent():
 
         # Define the prompt for the AI model
         prompt = f"""
-            Generate content for diabetic retinopathy stage '{className}' with the following structure:
+            Generate a concise and precise content for diabetic retinopathy stage '{className}' with the following structure:
             <response>
-                <description>content of description</description>
+                <description>Short and precise description of {className}</description>
                 <details>
-                    <short_description>content of short description</short_description>
-                    <stage>content of stage</stage>
-                    <precautions>content of precautions</precautions>
+                    <short_description>Brief summary of the stage {className}</short_description>
+                    <stage>Detailed description of the stage {className}</stage>
+                    <precautions>Key precautions and necessary actions for {className}</precautions>
+                </details>
+            </response>
+            Ensure that the response is accurate and factual. If unable to generate the correct text, respond with 'CAN NOT GENERATE'.
+
+            Here are examples for few stages of diabetic retinopathy, you can take these examples as a reference to generate the content for the requested stage:
+            
+            Example for "No Diabetic Retinopathy":
+            <response>
+                <description>No Diabetic Retinopathy</description>
+                <details>
+                    <short_description>No signs of diabetic retinopathy.</short_description>
+                    <stage>Your eyes are healthy with no signs of damage from diabetes.</stage>
+                    <precautions>It's important to continue regular eye check-ups with your doctor to make sure your eyes stay healthy.</precautions>
+                </details>
+            </response>
+
+            Example for "Proliferative Diabetic Retinopathy":
+            <response>
+                <description>Proliferative Diabetic Retinopathy</description>
+                <details>
+                    <short_description>Most severe stage of diabetic retinopathy.</short_description>
+                    <stage>New abnormal blood vessels have formed in your eyes due to diabetes, which can lead to serious vision problems.</stage>
+                    <precautions>Immediate medical intervention is necessary to protect your vision. Regular eye exams are crucial, and your doctor may recommend treatments like laser surgery or injections to prevent vision loss and preserve your eyesight.</precautions>
                 </details>
             </response>
         """
@@ -65,17 +88,21 @@ def generateContent():
         extracted_info = response.candidates[0].content.parts[0].text
         print("Extracted Response:", extracted_info)
 
+        # Check if the response contains 'CAN NOT GENERATE'
+        if 'CAN NOT GENERATE' in extracted_info:
+            return jsonify({"error": "CAN NOT GENERATE"}), 400
+
         # Parse the response using BeautifulSoup
         soup = BeautifulSoup(extracted_info, 'html.parser')
-        description = soup.find('description').text if soup.find('description') else ''
-        short_description = soup.find('short_description').text if soup.find('short_description') else ''
-        stage = soup.find('stage').text if soup.find('stage') else ''
-        precautions = soup.find('precautions').text if soup.find('precautions') else ''
+        description = soup.find('description').text if soup.find('description') else 'CAN NOT GENERATE'
+        short_description = soup.find('short_description').text if soup.find('short_description') else 'CAN NOT GENERATE'
+        stage = soup.find('stage').text if soup.find('stage') else 'CAN NOT GENERATE'
+        precautions = soup.find('precautions').text if soup.find('precautions') else 'CAN NOT GENERATE'
 
         # Construct the response in the desired format
         formatted_response = {
             className: {
-                'description': className,
+                'description': description,
                 'details': {
                     'short_description': short_description,
                     'stage': stage,
